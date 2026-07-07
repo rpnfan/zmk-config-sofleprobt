@@ -344,11 +344,11 @@
         ende_layer {
             display-name = "ENDE";
             bindings = <
-&kp N1    &kp N2     &kp N3        &kp N4           &kp N5              &kp N6                               &n7_circ          &kp N8         &kp N9        &n0_tild      &kp MINUS  &kp PLUS
-&kp ESC   &kp Q      &k_del DEL K  &o_ret RET O     &kp U               &kp Y             &kp V                                &kp D          &kp C         &kp L         &kp F      &kp J
-&sl 1     &kp H      &kp A         &kp E            &kp I               &kp COMMA         &kp G                                &kp T          &kp R         &kp N         &kp S      &sl 1
-&kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL DOT  &kp X             &none     &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
-                     &kp RIGHT     &mo 5            &none               &spc_nav 3 SPACE  &kp BSPC  &kp RET  &spc_nav 3 SPACE  &none          &mo 4         &none
+&kp N1    &kp N2     &kp N3        &kp N4           &kp N5              &kp N6                                 &n7_circ          &kp N8         &kp N9        &n0_tild      &kp MINUS  &kp PLUS
+&kp ESC   &kp Q      &k_del DEL K  &o_ret RET O     &kp U               &kp Y             &kp V                                  &kp D          &kp C         &kp L         &kp F      &kp J
+&sl 1     &kp H      &kp A         &kp E            &kp I               &kp COMMA         &kp G                                  &kp T          &kp R         &kp N         &kp S      &sl 1
+&kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL DOT  &kp X             &kp K_MUTE  &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
+                     &kp RIGHT     &none            &none               &spc_nav 3 SPACE  &kp BSPC    &kp RET  &spc_nav 3 SPACE  &none          &none         &mo 4
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
@@ -361,7 +361,20 @@
 &m_tild         &caps_word  &kp LS(N2)  &kp RA(P)     &kp RA(M)       &kp RA(LS(SEMI))  &kp BSLH                        &kp LBKT  &kp RBKT   &kp SQT    &kp GRAVE  &kp RA(COMMA)
 &none           &m_etr      &m_etr_u    &m_itr        &m_itr_u        &kp RA(Q)         &kp FSLH                        &kp LPAR  &kp RPAR   &kp EQUAL  &kp MINUS  &kp LS(N8)
 &none           &kp LSHFT   &none       &kp LS(LBKT)  &kp LS(RBKT)    &kp RA(Y)         &none     &kp RA(S)  &kp PIPE   &kp EXCL  &kp QMARK  &kp PLUS   &kp UNDER  &none
-                            &none       &none         &none           &kp SPACE         &none     &to 4      &kp SPACE  &none     &none      &to 3
+                            &none       &none         &none           &kp SPACE         &none     &none      &kp SPACE  &none     &none      &to 2
+            >;
+
+            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
+        };
+
+        qwerty_layer {
+            display-name = "QWERTY";
+            bindings = <
+&kp N1        &kp N2     &kp N3           &kp N4         &kp N5  &kp N6                 &kp N7     &kp N8  &kp N9     &kp N0   &kp MINUS  &kp EQUAL
+&kp TAB       &kp Q      &kp W            &kp E          &kp R   &kp T    &kp Y                    &kp U   &kp I      &kp O    &kp P      &kp LBKT
+&kp CAPSLOCK  &kp A      &kp S            &kp D          &kp F   &kp G    &kp H                    &kp J   &kp K      &kp L    &kp SEMI   &kp SQT
+&kp LEFT      &kp LSHFT  &kp Z            &kp X          &kp C   &kp V    &none  &none  &kp N      &kp M   &kp COMMA  &kp DOT  &kp FSLH   &kp PRINTSCREEN
+                         &kp RIGHT_ARROW  &kp BACKSPACE  &none   &kp F22  &none  &none  &kp SPACE  &none   &kp ENTER  &to 0
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
@@ -375,19 +388,6 @@
 &kp LC(Z)  &kp LG(LS(F))  &kp LC(C)  &kp LA(TAB)         &ht_paste 0 LC(V)  &kp LC(X)      &kp LEFT                      &kp DOWN      &kp UP   &kp RIGHT      &kp BSPC            &kp LC(BSPC)
 &none      &kp LSHFT      &kp LC(A)  &kp TAB             &kp LA(LEFT)       &kp LA(RIGHT)  &none      &none    &kp HOME  &kp LC(LEFT)  &kp DEL  &kp LC(RIGHT)  &end_sft LSHFT END  &none
                           &none      &none               &none              &trans         &kp BSPC   &kp ESC  &kp ESC   &none         &trans   &none
-            >;
-
-            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
-        };
-
-        qwerty_layer {
-            display-name = "QWERTY";
-            bindings = <
-&kp N1    &kp N2     &kp N3  &kp N4  &kp N5  &kp N6                 &kp N7     &kp N8  &kp N9     &kp N0   &kp MINUS  &kp EQUAL
-&kp TAB   &kp Q      &kp W   &kp E   &kp R   &kp T    &kp Y                    &kp U   &kp I      &kp O    &kp P      &kp LBKT
-&kp F21   &kp A      &kp S   &kp D   &kp F   &kp G    &kp H                    &kp J   &kp K      &kp L    &kp SEMI   &kp SQT
-&kp LEFT  &kp LSHFT  &kp Z   &kp X   &kp C   &kp V    &none  &none  &kp N      &kp M   &kp COMMA  &kp DOT  &kp FSLH   &kp RSHFT
-                     &none   &none   &none   &kp F22  &none  &to 0  &kp SPACE  &none   &none      &none
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
