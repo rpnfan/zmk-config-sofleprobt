@@ -40,10 +40,56 @@
  * the NAV layer in that case (unchanged, since no request was made to bind
  * it to anything while held via the other key).
  *
+ * ── Build requirement: zmk-tri-state module ────────────────────────────────
+ * The `swapper` behavior (real Alt-Tab, see below) uses
+ * `compatible = "zmk,behavior-tri-state"`, which is NOT part of mainline
+ * ZMK -- it must be pulled in as an external module. Add this entry to
+ * config/west.yml under `manifest: projects:` (alongside the existing zmkfirmware/zmk
+ * entry, keep everything else in that file as-is):
+ *
+ *   - name: zmk-tri-state
+ *     remote: urob
+ *     revision: main
+ *
+ * and this to `remotes:` if not already present:
+ *
+ *   - name: urob
+ *     url-base: https://github.com/urob
+ *
+ * Then add `- zmk-tri-state` to the `shield`/`board` build's module list if
+ * your build.yaml enumerates modules explicitly (most GitHub Actions setups
+ * pick it up automatically once it's a west project). Without this module
+ * the firmware will fail to build, not silently ignore `&swapper`.
+ *
+ * ── Fixes verified against the Kanata source (kanata.kbd) and ZMK's own
+ *    keys.h (github.com/zmkfirmware/zmk) rather than assumed ──────────────
+ *   - SpaceFn was holding layer 3 (QWERTY) instead of layer 2 (NAV) on both
+ *     thumb keys -- a literal "3" had been left in place of the NAV macro.
+ *     Both instances now read `&spc_nav NAV SPACE`.
+ *   - Shift+, (-> ;), Shift+. (-> :), Shift+8 (-> &), Shift+9 (-> *), and the
+ *     "=" key (unshifted -> +, shifted -> =) all lived in a `key_overrides`
+ *     node that did not fire reliably (confirmed against the Kanata
+ *     `defoverrides` block, which is the ground truth for all five of
+ *     these). The whole node has been removed and replaced with
+ *     comma_semi / dot_colon / n8_amp / n9_star / eq_pls mod-morphs bound
+ *     directly at each key position -- the same pattern n7_circ / n0_tild
+ *     already used successfully. dot_ctl's tap slot now calls dot_colon
+ *     directly (invoked as `&dot_ctl LCTRL 0`, the same dummy-tap-param
+ *     pattern already used by `&ht_qalt LALT 0`).
+ *   - ALTTAB is now a real Alt-Tab using the `swapper` tri-state behavior,
+ *     matching the Kanata `alttab` macro + `(layer-while-held nav ...)`
+ *     construct directly: tapping it the first time toggles Alt on (via
+ *     &kt) and taps Tab after a 10ms delay (matching Kanata's own 10ms
+ *     press-alt-then-tab gap); every subsequent tap while still active just
+ *     taps Tab again, keeping the Windows switcher open; releasing the
+ *     Space key drops the NAV layer, which is itself the layer-change event
+ *     that fires tri-state's third binding (&kt LALT again) and releases
+ *     Alt. This is a closer match to the QMK/Kanata behavior than the
+ *     previous hold-tap workaround, and doesn't need a manual release
+ *     safety net the way QMK's layer_state_set_user did.
+ *
  * ── Other differences from the QMK version ────────────────────────────────
  *   - POINTER layer removed -- no pointing device on this board.
- *   - ALTTAB: persistent-Alt across multiple Tab presses is not supported in
- *     ZMK without custom modules; replaced with a simple LA(TAB) shortcut.
  *   - M_ETR/M_ITR: ZMK macros cannot detect shift state; two separate macro
  *     bindings are provided: m_etr (e) / m_etr_u (E) and m_itr (i) / m_itr_u
  *     (I) on the SYM layer.
@@ -185,6 +231,18 @@
             tap-ms = <10>;
             bindings = <&kp LC(LS(LA(V)))>;
         };
+
+        // delayed_tab: inserts a short pause before Tab fires, mirroring
+        // Kanata's `(macro (on-press press-virtualkey alt) 10 tab)` -- the
+        // 10ms gap gives the host time to register Alt before Tab arrives,
+        // avoiding a bare Tab keystroke on the first press of the swapper.
+        delayed_tab: delayed_tab {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <10>;
+            tap-ms = <5>;
+            bindings = <&none &kp TAB>;
+        };
     };
 
     behaviors {
@@ -233,7 +291,7 @@
             #binding-cells = <2>;
             flavor = "tap-preferred";
             tapping-term-ms = <HT_TERM>;
-            bindings = <&kp>, <&kp>;
+            bindings = <&kp>, <&dot_colon>;
         };
 
         end_sft: end_sft {
@@ -283,46 +341,89 @@
 
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
+
+        // comma_semi / dot_colon: same pattern, replacing ko_comma_semi /
+        // ko_dot_colon below. SEMI is a bare (unshifted) keycode, so masking
+        // the real Shift and sending it plain gives ";". COLON is already
+        // LS(SEMICOLON) -- confirmed directly from ZMK's keys.h -- so with
+        // the real Shift masked, its own embedded shift still gives ":".
+        comma_semi: comma_semi {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp COMMA>, <&kp SEMI>;
+
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        dot_colon: dot_colon {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp DOT>, <&kp COLON>;
+
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        // n8_amp / n9_star: same pattern as n7_circ / n0_tild above, bound
+        // directly at the key position instead of going through the
+        // key_overrides node. AMPS = LS(N7) and ASTRK = LS(N8) already carry
+        // their own explicit shift, so no macro/unlatch step is needed here
+        // the way it is for the dead-key circumflex/tilde.
+        n8_amp: n8_amp {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp N8>, <&kp AMPS>;
+
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        n9_star: n9_star {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp N9>, <&kp ASTRK>;
+
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        // eq_pls: mirrors QMK's KC_EQL case. PLUS = LS(EQUAL) already carries
+        // its own shift, so unshifted taps correctly send "+". On a shifted
+        // tap the mod-morph masks the real Shift before invoking the second
+        // binding, so &kp EQUAL goes out bare -- i.e. "=" -- instead of
+        // stacking with the still-held physical Shift. ENDE-only, matching
+        // the QMK comment that this swap must not leak onto SYM/NAV.
+        eq_pls: eq_pls {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&kp PLUS>, <&kp EQUAL>;
+
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+
+        // swapper: real Alt-Tab, matching the Kanata (multi (layer-while-held
+        // navigation) + virtualkey alt) / (macro press-virtualkey alt ... tab)
+        // construct. Requires the zmk-tri-state module -- see the header
+        // comment at the top of this file for the west.yml entry needed.
+        // First tap: registers/holds Alt (via &kt, a toggle) and taps Tab.
+        // Each subsequent tap while still active: taps Tab only, Alt stays
+        // held throughout -- this is what keeps the Windows switcher open.
+        // The moment the NAV layer deactivates (i.e. Space is released),
+        // that layer change is what fires the third (interrupt) binding,
+        // which is &kt LALT again -- toggling Alt back off. No separate
+        // release-safety-net logic is needed the way QMK's
+        // layer_state_set_user had one: tri-state's own interrupt handling
+        // covers it.
+        swapper: swapper {
+            compatible = "zmk,behavior-tri-state";
+            #binding-cells = <0>;
+            bindings = <&kt LALT>, <&delayed_tab>, <&kt LALT>;
+        };
     };
 
-    key_overrides {
-        compatible = "zmk,key-overrides";
-
-        ko_comma_semi: ko_comma_semi {
-            key = <&kp COMMA>;
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-            replacement = <&kp SEMI>;
-            layers = <ENDE SYM NAV>;
-        };
-
-        ko_dot_colon: ko_dot_colon {
-            key = <&kp DOT>;
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-            replacement = <&kp COLON>;
-            layers = <ENDE SYM NAV>;
-        };
-
-        ko_plus_eq: ko_plus_eq {
-            key = <&kp PLUS>;
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-            replacement = <&kp EQUAL>;
-            layers = <ENDE>;
-        };
-
-        ko_8_amp: ko_8_amp {
-            key = <&kp N8>;
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-            replacement = <&kp AMPS>;
-            layers = <ENDE SYM NAV>;
-        };
-
-        ko_9_star: ko_9_star {
-            key = <&kp N9>;
-            mods = <(MOD_LSFT|MOD_RSFT)>;
-            replacement = <&kp ASTRK>;
-            layers = <ENDE SYM NAV>;
-        };
-    };
+    // key_overrides node removed entirely. All five entries (comma->semi,
+    // dot->colon, plus/eq swap, 8->amp, 9->star) lived here and none fired
+    // reliably in testing. Replaced with comma_semi / dot_colon / n8_amp /
+    // n9_star / eq_pls mod-morphs bound directly at each key position in
+    // the ENDE layer below -- the same pattern n7_circ / n0_tild already
+    // used successfully.
 
     // ── Combos ─────────────────────────────────────────────────────────────
     // Only the DCL combo remains. The former ESC combo has been removed and
@@ -346,11 +447,11 @@
         ende_layer {
             display-name = "ENDE";
             bindings = <
-&kp N1    &kp N2     &kp N3        &kp N4           &kp N5              &kp N6                                 &n7_circ          &kp N8         &kp N9        &n0_tild      &kp MINUS  &kp PLUS
+&kp N1    &kp N2     &kp N3        &kp N4           &kp N5              &kp N6                                 &n7_circ           &n8_amp        &n9_star      &n0_tild      &kp MINUS  &eq_pls
 &kp ESC   &kp Q      &k_del DEL K  &o_ret RET O     &kp U               &kp Y             &kp V                                  &kp D          &kp C         &kp L         &kp F      &kp J
-&sl 1     &kp H      &kp A         &kp E            &kp I               &kp COMMA         &kp G                                  &kp T          &kp R         &kp N         &kp S      &sl 1
-&kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL DOT  &kp X             &kp K_MUTE  &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
-                     &kp RIGHT     &none            &none               &spc_nav 3 SPACE  &kp BSPC    &kp RET  &spc_nav 3 SPACE  &none          &none         &mo 4
+&sl 1     &kp H      &kp A         &kp E            &kp I               &comma_semi       &kp G                                  &kp T          &kp R         &kp N         &kp S      &sl 1
+&kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL 0    &kp X             &kp K_MUTE  &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
+                     &kp RIGHT     &none            &none               &spc_nav NAV SPACE  &kp BSPC    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 4
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
@@ -387,7 +488,7 @@
             bindings = <
 &kp F1     &kp F2         &kp F3     &kp F4              &kp F5             &kp F6                             &kp F7    &kp F8        &kp F9   &kp F10        &kp F11             &kp F12
 &kp LC(Y)  &kp LC(F)      &kp LC(W)  &ht_newtab 0 LC(T)  &kp LC(LS(TAB))    &kp LC(TAB)    &kp K_APP                     &kp PG_DN     &kp RET  &kp INS        &kp PG_UP           &kp LC(LA(F))
-&kp LC(Z)  &kp LG(LS(F))  &kp LC(C)  &kp LA(TAB)         &ht_paste 0 LC(V)  &kp LC(X)      &kp LEFT                      &kp DOWN      &kp UP   &kp RIGHT      &kp BSPC            &kp LC(BSPC)
+&kp LC(Z)  &kp LG(LS(F))  &kp LC(C)  &swapper            &ht_paste 0 LC(V)  &kp LC(X)      &kp LEFT                      &kp DOWN      &kp UP   &kp RIGHT      &kp BSPC            &kp LC(BSPC)
 &none      &kp LSHFT      &kp LC(A)  &kp TAB             &kp LA(LEFT)       &kp LA(RIGHT)  &none      &none    &kp HOME  &kp LC(LEFT)  &kp DEL  &kp LC(RIGHT)  &end_sft LSHFT END  &none
                           &none      &none               &none              &trans         &kp BSPC   &kp ESC  &kp ESC   &none         &trans   &none
             >;
