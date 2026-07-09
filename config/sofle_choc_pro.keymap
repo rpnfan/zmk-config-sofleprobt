@@ -264,6 +264,27 @@
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
 
+        // lt_hp: layer-tap, hold-preferred. The stock &lt behavior
+        // (app/dts/behaviors/layer_tap.dtsi) defaults to flavor =
+        // "tap-preferred", which only resolves to hold once the key has
+        // been held ALONE for the full tapping-term with nothing else
+        // pressed. That's the wrong flavor for "hold this key, then chord
+        // other keys while it's held" -- e.g. holding ESC to reach the
+        // mouse layer and immediately pressing a movement key -- since
+        // releasing before the term elapses (very easy to do) resolves as
+        // a bare tap, and the buffered keypress replays on whatever layer
+        // was active before, not the intended one. hold-preferred resolves
+        // to hold the moment another key is pressed, which is what this
+        // needs; it's the same flavor spc_nav already uses for the same
+        // kind of hold-a-key-then-chord pattern (SpaceFn -> NAV).
+        lt_hp: lt_hp {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "hold-preferred";
+            tapping-term-ms = <HT_TERM>;
+            bindings = <&mo>, <&kp>;
+        };
+
         // comma_semi / dot_colon: same pattern, replacing ko_comma_semi /
         // ko_dot_colon below. SEMI is a bare (unshifted) keycode, so masking
         // the real Shift and sending it plain gives ";". COLON is already
@@ -368,7 +389,7 @@
             display-name = "END";
             bindings = <
 &kp N1     &kp N2     &kp N3        &kp N4           &kp N5            &kp N6                                   &n7_circ            &n8_amp        &n9_star      &n0_tild      &kp MINUS  &eq_pls
-&lt 3 ESC  &kp Q      &k_del DEL K  &o_ret RET O     &kp U             &kp Y               &kp V                                    &kp D          &kp C         &kp L         &kp F      &kp J
+&lt_hp MOUSE_M ESC  &kp Q      &k_del DEL K  &o_ret RET O     &kp U             &kp Y               &kp V                                    &kp D          &kp C         &kp L         &kp F      &kp J
 &sl 1      &kp H      &kp A         &kp E            &kp I             &comma_semi         &kp G                                    &kp T          &kp R         &kp N         &kp S      &sl 1
 &kp LEFT   &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL 0  &kp X               &kp K_MUTE  &none    &kp B               &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
                       &kp RIGHT     &none            &none             &spc_nav NAV SPACE  &kp BSPC    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 5
