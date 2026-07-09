@@ -343,6 +343,7 @@
             compatible = "zmk,behavior-tri-state";
             #binding-cells = <0>;
             bindings = <&kt LALT>, <&kp TAB>, <&kt LALT>;
+
             ignored-layers = <NAV>;
             ignored-key-positions = <14 16 17 30 31 32 33 40 41>;
         };
@@ -380,7 +381,7 @@
 &kp ESC   &kp Q      &k_del DEL K  &o_ret RET O     &kp U             &kp Y             &kp V                                  &kp D          &kp C         &kp L         &kp F      &kp J
 &sl 1     &kp H      &kp A         &kp E            &kp I             &comma_semi       &kp G                                  &kp T          &kp R         &kp N         &kp S      &sl 1
 &kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL 0  &kp X             &kp K_MUTE  &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
-                     &kp RIGHT     &none            &none             &spc_nav NAV SPACE  &kp BSPC    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 4
+                     &kp RIGHT     &none            &none             &spc_nav 3 SPACE  &kp BSPC    &kp RET  &spc_nav 3 SPACE  &none          &none         &mo 4
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
