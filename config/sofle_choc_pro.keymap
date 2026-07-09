@@ -5,40 +5,14 @@
  * OS layout assumed: Windows US International (Right-Alt = AltGr)
  *
  * Layers:
- *   0  ENDE      base layer (anymak:END)
+ *   0  END       base layer (anymak:END)
  *   1  SYM       symbols, diacritics, special characters
  *   2  NAV       navigation + editor shortcuts (SpaceFn)
  *   3  QWERTY    passthrough for Kanata on host
- *   4  HARDWARE  BT profile management, output select, Studio unlock,
- *                bootloader/reset -- held via key position 58 on ENDE
+ *   4  sofle     profile management, output select, Studio unlock
  *   5  MYMACROS  empty layer reserved for custom macros, to be populated
- *                later via ZMK Studio or direct firmware edits -- held via
- *                key position 51 on ENDE
+ *                later via ZMK Studio or direct firmware edits 
  *
- * ── Bug fix carried out in this revision ─────────────────────────────────
- * ZMK parses the flat `bindings = < ... >;` array by raw token order; a
- * multi-parameter binding such as `&spc_nav NAV SPACE` consumes three
- * tokens, not one. An earlier revision of this file had several thumb-row
- * bindings landing one position earlier than documented as a result (e.g.
- * BSPC/RET appearing at positions 53/54 instead of the intended 54/55).
- * This revision corrects the underlying token alignment so the compiled
- * layout matches the documentation for every layer, which also repairs
- * downstream position-dependent items (the right SpaceFn key now correctly
- * sits at position 56, matching the description below and the intended
- * combo/behavior wiring).
- *
- * ── SpaceFn / NAV access, and Escape (this revision) ──────────────────────
- * Two independent keys can engage the NAV layer by being held:
- *   - Position 53 (left inner thumb):  &spc_nav NAV SPACE
- *   - Position 56 (right inner thumb): &spc_nav NAV SPACE
- * Previously, tapping BOTH within a fixed timing window fired a combo bound
- * to Escape. This has been removed. Instead, the NAV layer itself now binds
- * position 56 directly to &kp ESC. This means: hold position 53 for as long
- * as you like to engage NAV, then tap position 56 at any time (no timeout)
- * to send Escape -- a genuine free-timed layer key, not a combo. Holding 56
- * instead of 53 still engages NAV as before; position 53 remains &trans on
- * the NAV layer in that case (unchanged, since no request was made to bind
- * it to anything while held via the other key).
  *
  * ── Build requirement: zmk-tri-state module ────────────────────────────────
  * The `swapper` behavior (real Alt-Tab, see below) uses
@@ -61,56 +35,15 @@
  * pick it up automatically once it's a west project). Without this module
  * the firmware will fail to build, not silently ignore `&swapper`.
  *
- * ── Fixes verified against the Kanata source (kanata.kbd) and ZMK's own
- *    keys.h (github.com/zmkfirmware/zmk) rather than assumed ──────────────
- *   - SpaceFn was holding layer 3 (QWERTY) instead of layer 2 (NAV) on both
- *     thumb keys -- a literal "3" had been left in place of the NAV macro.
- *     Both instances now read `&spc_nav NAV SPACE`.
- *   - Shift+, (-> ;), Shift+. (-> :), Shift+8 (-> &), Shift+9 (-> *), and the
- *     "=" key (unshifted -> +, shifted -> =) all lived in a `key_overrides`
- *     node that did not fire reliably (confirmed against the Kanata
- *     `defoverrides` block, which is the ground truth for all five of
- *     these). The whole node has been removed and replaced with
- *     comma_semi / dot_colon / n8_amp / n9_star / eq_pls mod-morphs bound
- *     directly at each key position -- the same pattern n7_circ / n0_tild
- *     already used successfully. dot_ctl's tap slot now calls dot_colon
- *     directly (invoked as `&dot_ctl LCTRL 0`, the same dummy-tap-param
- *     pattern already used by `&ht_qalt LALT 0`).
- *   - ALTTAB is now a real Alt-Tab using the `swapper` tri-state behavior,
- *     matching the Kanata `alttab` macro + `(layer-while-held nav ...)`
- *     construct directly: tapping it the first time toggles Alt on (via
- *     &kt) and taps Tab after a 10ms delay (matching Kanata's own 10ms
- *     press-alt-then-tab gap); every subsequent tap while still active just
- *     taps Tab again, keeping the Windows switcher open; releasing the
- *     Space key drops the NAV layer, which is itself the layer-change event
- *     that fires tri-state's third binding (&kt LALT again) and releases
- *     Alt. This is a closer match to the QMK/Kanata behavior than the
- *     previous hold-tap workaround, and doesn't need a manual release
- *     safety net the way QMK's layer_state_set_user did.
  *
  * ── Other differences from the QMK version ────────────────────────────────
  *   - POINTER layer removed -- no pointing device on this board.
  *   - M_ETR/M_ITR: ZMK macros cannot detect shift state; two separate macro
  *     bindings are provided: m_etr (e) / m_etr_u (E) and m_itr (i) / m_itr_u
- *     (I) on the SYM layer.
- *   - Q_ALT dead-key unlatch and shift-sensitive quote: implemented via the
- *     sq_dquot mod-morph, wrapped in the ht_qalt hold-tap (hold = LALT).
- *   - Shift+7 -> caret and Shift+0 -> tilde (literal, unlatched): implemented
- *     via the n7_circ / n0_tild mod-morphs, active on ENDE only.
- *   - Encoder-duplicate volume/mute keys removed: the Sofle Choc Pro has a
- *     hardware volume encoder, so the KC_VOL_UP/KC_VOL_DN/KC_MUTE key
- *     bindings inherited from the Lily58 keymap have been removed (left
- *     empty) on ENDE and QWERTY, and KC_MUTE removed from NAV. The encoder
- *     sensor-bindings themselves are unchanged and still provide volume
- *     control directly.
+ *     (I),  the uppercase version not assigned yet
  *   - CapsWord: ZMK's built-in &caps_word is used (breaks on Space).
  *   - raw_hid layer-visualiser communication: no ZMK equivalent; omitted.
  *
- * ── Sofle Choc Pro physical layout -- 60 keys ──────────────────────────────
- *
- *  Rows 0-3: positions map 1-to-1 with the Lily58 (6L+6R per row, 14 on the
- *  bottom row with two inner keys). Row 4 (thumbs): 50-53 = left outer,
- *  54 = big-L, 55 = big-R, 56-59 = right outer.
  */
 
 #include <behaviors.dtsi>
@@ -402,11 +335,16 @@
         // release-safety-net logic is needed the way QMK's
         // layer_state_set_user had one: tri-state's own interrupt handling
         // covers it.
+        // The configuration has been augmented to intercept and ignore the navigation
+        // layer and key positions 14, 16, 17, 30-33, and 40-41 so multi-key operations
+        // do not break the Alt state.
 
         swapper: swapper {
             compatible = "zmk,behavior-tri-state";
             #binding-cells = <0>;
             bindings = <&kt LALT>, <&kp TAB>, <&kt LALT>;
+            ignored-layers = <NAV>;
+            ignored-key-positions = <14 16 17 30 31 32 33 40 41>;
         };
     };
 
@@ -442,7 +380,7 @@
 &kp ESC   &kp Q      &k_del DEL K  &o_ret RET O     &kp U             &kp Y             &kp V                                  &kp D          &kp C         &kp L         &kp F      &kp J
 &sl 1     &kp H      &kp A         &kp E            &kp I             &comma_semi       &kp G                                  &kp T          &kp R         &kp N         &kp S      &sl 1
 &kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL 0  &kp X             &kp K_MUTE  &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
-                     &kp RIGHT     &none            &none             &spc_nav 3 SPACE  &kp BSPC    &kp RET  &spc_nav 3 SPACE  &none          &none         &mo 4
+                     &kp RIGHT     &none            &none             &spc_nav NAV SPACE  &kp BSPC    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 4
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
