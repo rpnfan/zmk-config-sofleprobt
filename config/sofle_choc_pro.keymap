@@ -8,10 +8,10 @@
  *   0  END       base layer (anymak:END)
  *   1  SYM       symbols, diacritics, special characters
  *   2  NAV       navigation + editor shortcuts (SpaceFn)
- *   3  QWERTY    passthrough for Kanata on host
- *   4  sofle     profile management, output select, Studio unlock
- *   5  MYMACROS  empty layer reserved for custom macros, to be populated
- *                later via ZMK Studio or direct firmware edits 
+ *   3  MOUSE_M   empty layer reserved for custom macros, mouse controls,
+ *                and DaVinci Resolve shortcuts
+ *   4  QWERTY    passthrough for Kanata on host
+ *   5  sofle     profile management, output select, Studio unlock
  *
  *
  * ── Build requirement: zmk-tri-state module ────────────────────────────────
@@ -58,9 +58,9 @@
 #define ENDE      0
 #define SYM       1
 #define NAV       2
-#define QWERTY    3
-#define HARDWARE  4
-#define MYMACROS  5
+#define MOUSE_M   3
+#define QWERTY    4
+#define SOFLE     5
 
 // ── Timing ─────────────────────────────────────────────────────────────────
 
@@ -343,22 +343,10 @@
             compatible = "zmk,behavior-tri-state";
             #binding-cells = <0>;
             bindings = <&kt LALT>, <&kp TAB>, <&kt LALT>;
-
             ignored-layers = <NAV>;
             ignored-key-positions = <14 16 17 30 31 32 33 40 41>;
         };
     };
-
-    // key_overrides node removed entirely. All five entries (comma->semi,
-    // dot->colon, plus/eq swap, 8->amp, 9->star) lived here and none fired
-    // reliably in testing. Replaced with comma_semi / dot_colon / n8_amp /
-    // n9_star / eq_pls mod-morphs bound directly at each key position in
-    // the ENDE layer below -- the same pattern n7_circ / n0_tild already
-    // used successfully.
-    // ── Combos ─────────────────────────────────────────────────────────────
-    // Only the DCL combo remains. The former ESC combo has been removed and
-    // replaced by a genuine free-timed layer binding -- see the NAV layer
-    // (position 56) and the header note above.
 
     combos {
         compatible = "zmk,combos";
@@ -381,7 +369,7 @@
 &kp ESC   &kp Q      &k_del DEL K  &o_ret RET O     &kp U             &kp Y             &kp V                                  &kp D          &kp C         &kp L         &kp F      &kp J
 &sl 1     &kp H      &kp A         &kp E            &kp I             &comma_semi       &kp G                                  &kp T          &kp R         &kp N         &kp S      &sl 1
 &kp LEFT  &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL 0  &kp X             &kp K_MUTE  &none    &kp B             &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
-                     &kp RIGHT     &none            &none             &spc_nav 3 SPACE  &kp BSPC    &kp RET  &spc_nav 3 SPACE  &none          &none         &mo 4
+                     &kp RIGHT     &none            &none             &spc_nav NAV SPACE  &kp BSPC    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 5
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
@@ -400,19 +388,6 @@
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
         };
 
-        qwerty_layer {
-            display-name = "QWERTY";
-            bindings = <
-&kp N1        &kp N2     &kp N3           &kp N4         &kp N5  &kp N6                 &kp N7     &kp N8  &kp N9     &kp N0   &kp MINUS  &kp EQUAL
-&kp TAB       &kp Q      &kp W            &kp E          &kp R   &kp T    &kp Y                    &kp U   &kp I      &kp O    &kp P      &kp LBKT
-&kp CAPSLOCK  &kp A      &kp S            &kp D          &kp F   &kp G    &kp H                    &kp J   &kp K      &kp L    &kp SEMI   &kp SQT
-&kp LEFT      &kp LSHFT  &kp Z            &kp X          &kp C   &kp V    &none  &none  &kp N      &kp M   &kp COMMA  &kp DOT  &kp FSLH   &kp PRINTSCREEN
-                         &kp RIGHT_ARROW  &kp BACKSPACE  &none   &kp F22  &none  &none  &kp SPACE  &none   &kp ENTER  &to 0
-            >;
-
-            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
-        };
-
         nav_layer {
             display-name = "NAV";
             bindings = <
@@ -426,6 +401,32 @@
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
         };
 
+        mymacros_layer {
+            display-name = "Mouse & M.";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+                &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+            >;
+
+            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
+        };
+
+        qwerty_layer {
+            display-name = "QWERTY";
+            bindings = <
+&kp N1        &kp N2     &kp N3           &kp N4         &kp N5  &kp N6                 &kp N7     &kp N8  &kp N9     &kp N0   &kp MINUS  &kp EQUAL
+&kp TAB       &kp Q      &kp W            &kp E          &kp R   &kp T    &kp Y                    &kp U   &kp I      &kp O    &kp P      &kp LBKT
+&kp CAPSLOCK  &kp A      &kp S            &kp D          &kp F   &kp G    &kp H                    &kp J   &kp K      &kp L    &kp SEMI   &kp SQT
+&kp LEFT      &kp LSHFT  &kp Z            &kp X          &kp C   &kp V    &none  &none  &kp N      &kp M   &kp COMMA  &kp DOT  &kp FSLH   &kp PRINTSCREEN
+                         &kp RIGHT_ARROW  &kp BACKSPACE  &none   &kp F22  &none  &none  &kp SPACE  &none   &kp ENTER  &to 0
+            >;
+
+            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
+        };
+
         sofle_layer {
             display-name = "Sofle";
             bindings = <
@@ -434,19 +435,6 @@
 &none           &none         &none         &ext_power EP_TOG  &none         &none           &none                       &out OUT_TOG  &rgb_ug RGB_TOG  &rgb_ug RGB_EFF  &rgb_ug RGB_BRD  &rgb_ug RGB_BRI
 &bootloader     &sys_reset    &none         &none              &none         &studio_unlock  &none  &none  &out OUT_BLE  &none         &none            &rgb_ug RGB_SPD  &sys_reset       &bootloader
                               &none         &none              &none         &none           &none  &none  &none         &none         &none            &none
-            >;
-
-            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
-        };
-
-        mymacros_layer {
-            display-name = "MyMacros";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-                &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
