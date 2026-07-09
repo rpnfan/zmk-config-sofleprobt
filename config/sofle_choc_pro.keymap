@@ -231,19 +231,6 @@
             tap-ms = <10>;
             bindings = <&kp LC(LS(LA(V)))>;
         };
-
-        // delayed_tab: inserts a short pause before Tab fires, mirroring
-        // Kanata's `(macro (on-press press-virtualkey alt) 10 tab)` -- the
-        // 10ms gap gives the host time to register Alt before Tab arrives,
-        // avoiding a bare Tab keystroke on the first press of the swapper.
-
-        delayed_tab: delayed_tab {
-            compatible = "zmk,behavior-macro";
-            #binding-cells = <0>;
-            wait-ms = <10>;
-            tap-ms = <5>;
-            bindings = <&none &kp TAB>;
-        };
     };
 
     behaviors {
@@ -419,7 +406,7 @@
         swapper: swapper {
             compatible = "zmk,behavior-tri-state";
             #binding-cells = <0>;
-            bindings = <&kt LALT>, <&delayed_tab>, <&kt LALT>;
+            bindings = <&kt LALT>, <&kp TAB>, <&kt LALT>;
         };
     };
 
