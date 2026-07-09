@@ -26,6 +26,13 @@ struct status_state {
     uint8_t layer_index;
     const char *layer_label;
     uint8_t wpm[10];
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+    // NEW: last-known battery level of peripheral (source 0), and whether
+    // we've received a real reading for it yet. Populated by
+    // widget_peripheral_battery_status in status.c.
+    uint8_t peripheral_battery;
+    bool peripheral_connected;
+#endif
 #else
     bool connected;
 #endif
