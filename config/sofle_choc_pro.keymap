@@ -51,6 +51,8 @@
 #include <dt-bindings/zmk/ext_power.h>
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/outputs.h>
+#define ZMK_POINTING_DEFAULT_MOVE_VAL 900 // 600
+#define ZMK_POINTING_DEFAULT_SCRL_VAL 20  // 10
 #include <dt-bindings/zmk/pointing.h>
 #include <dt-bindings/zmk/rgb.h>
 
@@ -93,7 +95,7 @@
 // `#define ZMK_POINTING_DEFAULT_MOVE_VAL 900` (default is 600) before the
 // `#include <dt-bindings/zmk/pointing.h>` line above.
 &mmv {
-    time-to-max-speed-ms = <900>;
+    time-to-max-speed-ms = <800>;
     acceleration-exponent = <2>;
 };
 
