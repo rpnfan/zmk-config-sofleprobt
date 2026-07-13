@@ -147,16 +147,19 @@ static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
 
-    // Draw layer
-    if (state->layer_label == NULL || strlen(state->layer_label) == 0) {
-        char text[10] = {};
 
-        sprintf(text, "LAYER %i", state->layer_index);
+    // TEMP DIAGNOSTIC — replacing the layer text with the raw peripheral
+    // battery state, at a position we already know renders correctly.
+    char text[20] = {};
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+    snprintf(text, sizeof(text), "R%d C%d", state->peripheral_battery,
+             state->peripheral_connected);
+#else
+    snprintf(text, sizeof(text), "NO FETCH");
+#endif
+    lv_canvas_draw_text(canvas, 0, 5, 68, &label_dsc, text);
 
-        lv_canvas_draw_text(canvas, 0, 5, 68, &label_dsc, text);
-    } else {
-        lv_canvas_draw_text(canvas, 0, 5, 68, &label_dsc, state->layer_label);
-    }
+    
 
 // NEW: peripheral battery, drawn underneath the layer name where this
 // canvas has plenty of free vertical space (the layer text is a single
