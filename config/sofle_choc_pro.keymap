@@ -68,6 +68,36 @@
 #define HT_TERM   220
 #define SPC_TERM  180
 
+
+// ── Mouse cursor acceleration ───────────────────────────────────────────────
+// &mmv is zmk,behavior-input-two-axis (app/dts/bindings/behaviors/
+// zmk,behavior-input-two-axis.yaml). Its label is already resolvable here
+// because <dt-bindings/zmk/pointing.h> (included above) is what brings the
+// mmv/msc behavior nodes into scope -- this block just overrides two of its
+// properties, it doesn't redefine the behavior.
+//   time-to-max-speed-ms: how long you have to hold a direction before the
+//     cursor reaches full speed. ZMK's default is 300 -- quite quick, so it
+//     barely feels like it's accelerating. Raised to 900 here for a clearly
+//     gradual ramp: slow and precise right after pressing, faster the
+//     longer you hold.
+//   acceleration-exponent: shapes the ramp curve rather than its length.
+//     0 = no ramp at all, jumps straight to max speed. 1 (ZMK's default) is
+//     roughly linear. 2 keeps the early part of the hold slower/more
+//     controllable and then picks up more sharply as you approach
+//     time-to-max-speed-ms, which is normally the more useful feel for
+//     precise-vs-fast cursor work.
+// Both are tunable to taste -- raise time-to-max-speed-ms further for an
+// even more gradual ramp, or lower it back toward 300-500 if 900 feels too
+// slow to get moving. If you also want a higher top speed (not just a
+// longer ramp to the existing one), add
+// `#define ZMK_POINTING_DEFAULT_MOVE_VAL 900` (default is 600) before the
+// `#include <dt-bindings/zmk/pointing.h>` line above.
+&mmv {
+    time-to-max-speed-ms = <900>;
+    acceleration-exponent = <2>;
+};
+
+
 / {
     macros {
         m_sq: m_sq {
