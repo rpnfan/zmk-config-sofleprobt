@@ -215,11 +215,37 @@ ZMK_SUBSCRIPTION(widget_battery_status, zmk_battery_state_changed);
 ZMK_SUBSCRIPTION(widget_battery_status, zmk_usb_conn_state_changed);
 #endif /* IS_ENABLED(CONFIG_USB_DEVICE_STACK) */
 
-// NEW: listener for the peripheral's battery level. zmk_peripheral_battery_state_changed
-// is declared in the same <zmk/events/battery_state_changed.h> header already included
-// above, and is raised by ZMK core whenever CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING
-// fetches or updates a peripheral's level.
+// Peripheral battery listener -- NOT built with ZMK_DISPLAY_WIDGET_LISTENER.
+// Root cause found by reading ZMK core's actual macro (app/include/zmk/display.h):
+// the macro's generated event callback only records a new value if
+// zmk_display_is_initialized() is *already* true at the moment the event
+// arrives -- otherwise it's silently dropped, no queue, no retry. The local
+// battery widget never notices this because battery_status_get_state() (above)
+// has zmk_battery_state_of_charge() as a direct fallback it can call again at
+// any time. There is no equivalent getter for a peripheral's level -- only
+// this event -- so if the peripheral's battery report (which arrives once
+// split BLE finishes connecting and reading it, shortly after boot) happens
+// to land before the display finishes initializing, it's gone for good until
+// the level next changes, which for a slowly-draining battery can be hours.
+// This was confirmed indirectly: CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY
+// exposes the same event correctly to the host (via central_bas_proxy.c's own
+// raw ZMK_LISTENER, which has no such gate) -- proof the event itself fires
+// fine, and the bug was specifically in how this widget was consuming it.
+//
+// Fix: capture every event unconditionally into a plain cache, then submit
+// the actual (LVGL-touching) redraw to zmk_display_work_q() -- the same
+// queue the macro uses, so thread-safety is preserved -- and if the display
+// isn't marked ready yet when that redraw work runs, reschedule itself
+// briefly instead of giving up. In practice this resolves on the very first
+// attempt: zmk_display_init() starts that work queue and enqueues its own
+// init work on it before any BLE peripheral connection could possibly
+// complete, so this redraw work almost always ends up queued (FIFO) behind
+// that init work and only runs once it's done. The retry is just a safety
+// net for the rare case the display device itself isn't ready yet.
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+
+static struct peripheral_battery_status_state cached_peripheral_state = {.valid = false};
+
 static void set_peripheral_battery_status(struct zmk_widget_status *widget,
                                           struct peripheral_battery_status_state state) {
     // Single peripheral (source 0) on a 2-piece split. If you ever add a
@@ -234,40 +260,46 @@ static void set_peripheral_battery_status(struct zmk_widget_status *widget,
     draw_bottom(widget->obj, widget->cbuf3, &widget->state);
 }
 
-static void peripheral_battery_status_update_cb(struct peripheral_battery_status_state state) {
+static void peripheral_battery_draw_work_cb(struct k_work *work) {
+    if (!cached_peripheral_state.valid) {
+        return;
+    }
+
+    if (!zmk_display_is_initialized()) {
+        k_work_reschedule_for_queue(zmk_display_work_q(),
+                                    k_work_delayable_from_work(work), K_MSEC(500));
+        return;
+    }
+
     struct zmk_widget_status *widget;
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        set_peripheral_battery_status(widget, state);
+        set_peripheral_battery_status(widget, cached_peripheral_state);
     }
 }
 
-static struct peripheral_battery_status_state
-peripheral_battery_status_get_state(const zmk_event_t *eh) {
+K_WORK_DELAYABLE_DEFINE(peripheral_battery_draw_work, peripheral_battery_draw_work_cb);
+
+static int peripheral_battery_raw_listener_cb(const zmk_event_t *eh) {
     const struct zmk_peripheral_battery_state_changed *ev =
         as_zmk_peripheral_battery_state_changed(eh);
-
     if (ev == NULL) {
-        // Initial call, before any peripheral battery event has fired yet
-        // (there is no cached-value getter to fall back on, unlike the
-        // local battery's zmk_battery_state_of_charge()). Report "no data
-        // yet" rather than a fabricated 0%; the real value follows shortly
-        // after boot/reconnect once ZMK finishes the GATT read.
-        return (struct peripheral_battery_status_state){.valid = false};
+        return ZMK_EV_EVENT_BUBBLE;
     }
 
-    return (struct peripheral_battery_status_state){
+    cached_peripheral_state = (struct peripheral_battery_status_state){
         .source = ev->source,
         .level = ev->state_of_charge,
         .valid = true,
     };
+
+    k_work_reschedule_for_queue(zmk_display_work_q(), &peripheral_battery_draw_work, K_NO_WAIT);
+
+    return ZMK_EV_EVENT_BUBBLE;
 }
 
-ZMK_DISPLAY_WIDGET_LISTENER(widget_peripheral_battery_status,
-                            struct peripheral_battery_status_state,
-                            peripheral_battery_status_update_cb,
-                            peripheral_battery_status_get_state)
+ZMK_LISTENER(peripheral_battery_raw_listener, peripheral_battery_raw_listener_cb);
+ZMK_SUBSCRIPTION(peripheral_battery_raw_listener, zmk_peripheral_battery_state_changed);
 
-ZMK_SUBSCRIPTION(widget_peripheral_battery_status, zmk_peripheral_battery_state_changed);
 #endif /* IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING) */
 
 static void set_output_status(struct zmk_widget_status *widget,
@@ -356,9 +388,6 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     widget_battery_status_init();
     widget_output_status_init();
     widget_layer_status_init();
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
-    widget_peripheral_battery_status_init();
-#endif
 
     return 0;
 }
