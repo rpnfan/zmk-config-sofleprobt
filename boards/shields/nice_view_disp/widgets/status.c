@@ -87,6 +87,26 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
 
     lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, output_text);
 
+    // Central (this half's own) battery, then peripheral (right half's)
+    // battery, printed as two lines in the space below the icons and above
+    // where the middle canvas (BT profile circles) begins.
+    lv_draw_label_dsc_t label_dsc_batt;
+    init_label_dsc(&label_dsc_batt, LVGL_FOREGROUND, &lv_font_montserrat_14, LV_TEXT_ALIGN_LEFT);
+
+    char local_batt_text[10] = {};
+    snprintf(local_batt_text, sizeof(local_batt_text), "L %d%%", state->battery);
+    lv_canvas_draw_text(canvas, 0, 20, CANVAS_SIZE, &label_dsc_batt, local_batt_text);
+
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
+    char periph_batt_text[10] = {};
+    if (state->peripheral_connected) {
+        snprintf(periph_batt_text, sizeof(periph_batt_text), "R %d%%", state->peripheral_battery);
+    } else {
+        snprintf(periph_batt_text, sizeof(periph_batt_text), "R --");
+    }
+    lv_canvas_draw_text(canvas, 0, 38, CANVAS_SIZE, &label_dsc_batt, periph_batt_text);
+#endif
+
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
 }
@@ -147,37 +167,16 @@ static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status
     // Fill background
     lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_black_dsc);
 
+    // Draw layer
+    if (state->layer_label == NULL || strlen(state->layer_label) == 0) {
+        char text[10] = {};
 
-    // TEMP DIAGNOSTIC — replacing the layer text with the raw peripheral
-    // battery state, at a position we already know renders correctly.
-    char text[20] = {};
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
-    snprintf(text, sizeof(text), "R%d C%d", state->peripheral_battery,
-             state->peripheral_connected);
-#else
-    snprintf(text, sizeof(text), "NO FETCH");
-#endif
-    lv_canvas_draw_text(canvas, 0, 5, 68, &label_dsc, text);
+        sprintf(text, "LAYER %i", state->layer_index);
 
-    
-
-// NEW: peripheral battery, drawn underneath the layer name where this
-// canvas has plenty of free vertical space (the layer text is a single
-// line near the top). Positioning is a first estimate since it can't be
-// previewed here -- move the y-coordinate (currently 30) if it lands too
-// close to the layer text for your taste.
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING)
-    lv_draw_label_dsc_t label_dsc_periph;
-    init_label_dsc(&label_dsc_periph, LVGL_FOREGROUND, &lv_font_unscii_8, LV_TEXT_ALIGN_CENTER);
-
-    char periph_text[16] = {};
-    if (!state->peripheral_connected) {
-        snprintf(periph_text, sizeof(periph_text), "R --");
+        lv_canvas_draw_text(canvas, 0, 5, 68, &label_dsc, text);
     } else {
-        snprintf(periph_text, sizeof(periph_text), "R %d%%", state->peripheral_battery);
+        lv_canvas_draw_text(canvas, 0, 5, 68, &label_dsc, state->layer_label);
     }
-    lv_canvas_draw_text(canvas, 0, 30, 68, &label_dsc_periph, periph_text);
-#endif
 
     // Rotate canvas
     rotate_canvas(canvas, cbuf);
@@ -260,7 +259,7 @@ static void set_peripheral_battery_status(struct zmk_widget_status *widget,
     widget->state.peripheral_battery = state.level;
     widget->state.peripheral_connected = true;
 
-    draw_bottom(widget->obj, widget->cbuf3, &widget->state);
+    draw_top(widget->obj, widget->cbuf, &widget->state);
 }
 
 static void peripheral_battery_draw_work_cb(struct k_work *work) {
