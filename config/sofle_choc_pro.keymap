@@ -69,7 +69,7 @@
 // ── Timing ─────────────────────────────────────────────────────────────────
 
 #define HT_TERM   220
-#define SPC_TERM  180
+#define SPC_TERM  200
 
 // ── Mouse cursor acceleration ───────────────────────────────────────────────
 // &mmv is zmk,behavior-input-two-axis (app/dts/bindings/behaviors/
@@ -98,6 +98,37 @@
 &mmv {
     time-to-max-speed-ms = <800>;
     acceleration-exponent = <2>;
+};
+
+// ── One-shot (sticky) quick-release ─────────────────────────────────────────
+// Overrides ZMK's stock &sk (sticky-key) behavior, already brought into
+// scope by <behaviors.dtsi>. This affects both &sk LSHFT bindings on the
+// ENDE layer without having to touch either binding line.
+//
+// Default (quick-release unset) behavior: after tapping the sticky key, it
+// stays "stuck" active until the *release* of the next key. In
+// rolling/overlapping typing -- where key N+1 goes down before key N is
+// physically up -- this creates a window in which more than one subsequent
+// keypress can still see the modifier as active, since it hasn't been
+// released yet. Result: rolling through a sticky-Shift tap can capitalize
+// more than one character.
+//
+// quick-release changes the release trigger from "next key's release" to
+// "next key's press": the sticky modifier is torn down the instant the
+// following key goes down, before any subsequent key in the roll can
+// register. That leaves only the single intended key affected.
+//
+// &sl (sticky layer, used for &sl 1 / SYM below) needs NO equivalent
+// override: ZMK hardcodes sticky layers to quick-release by default
+// already (confirmed on ZMK's sticky-layer behavior page) -- it's only
+// sticky *keys* where quick-release is opt-in.
+//
+// This is a stock ZMK devicetree property (documented on the sticky-key
+// behavior page) -- no custom behavior node is needed, and no existing
+// `&sk` bindings need to change.
+
+&sk {
+    quick-release;
 };
 
 / {
