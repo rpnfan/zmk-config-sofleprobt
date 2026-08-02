@@ -46,7 +46,7 @@
  *
  */
 
-#define ZMK_POINTING_DEFAULT_MOVE_VAL 900 // 600
+#define ZMK_POINTING_DEFAULT_MOVE_VAL 1000 // 600
 #define ZMK_POINTING_DEFAULT_SCRL_VAL 20  // 10
 
 #include <behaviors.dtsi>
@@ -96,8 +96,10 @@
 // `#include <dt-bindings/zmk/pointing.h>` line above.
 
 &mmv {
-    time-to-max-speed-ms = <800>;
-    acceleration-exponent = <2>;
+    time-to-max-speed-ms = <450>;   // was 800 — reaches full speed in under half a second
+    acceleration-exponent = <1>;    // was 2 — linear ramp, no "dead" slow start
+    trigger-period-ms = <8>;        // new — default is 16; halving it is what actually
+                                     // makes the motion feel fluid instead of choppy
 };
 
 // ── One-shot (sticky) quick-release ─────────────────────────────────────────
