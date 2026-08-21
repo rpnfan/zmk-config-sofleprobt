@@ -351,6 +351,26 @@
             bindings = <&mo>, <&kp>;
         };
 
+        // mo_tog_hp: momentary-layer on hold, toggle-layer on tap. Takes two
+        // params (hold layer, tap layer) -- pass the same layer number for
+        // both, e.g. `&mo_tog_hp MOUSE_M MOUSE_M`, to get "hold for quick
+        // access, tap to latch it on". Same hold-preferred reasoning as
+        // lt_hp above: the point of holding this key is almost always to
+        // immediately chord it with another key on the target layer (e.g.
+        // hold + tap &mmv MOVE_LEFT), so hold must resolve the instant that
+        // second key is pressed rather than waiting out the full
+        // tapping-term alone. tap-preferred was considered and rejected for
+        // the same reason lt_hp isn't tap-preferred: it would swallow/
+        // misroute that chorded keypress on quick holds.
+
+        mo_tog_hp: mo_tog_hp {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "hold-preferred";
+            tapping-term-ms = <HT_TERM>;
+            bindings = <&mo>, <&tog>;
+        };
+
         // comma_semi / dot_colon: same pattern, replacing ko_comma_semi /
         // ko_dot_colon below. SEMI is a bare (unshifted) keycode, so masking
         // the real Shift and sending it plain gives ";". COLON is already
@@ -458,7 +478,7 @@
 &lt_hp MOUSE_M ESC  &kp Q      &k_del DEL K  &o_ret RET O     &kp U             &kp Y               &kp V                                    &kp D          &kp C         &kp L         &kp F      &kp J
 &sl 1               &kp H      &kp A         &kp E            &kp I             &comma_semi         &kp G                                    &kp T          &kp R         &kp N         &kp S      &sl 1
 &kp LEFT            &sk LSHFT  &mt_b LGUI Z  &ht_qalt LALT 0  &dot_ctl LCTRL 0  &kp X               &kp K_MUTE  &none    &kp B               &mt_b RCTRL P  &mt_b LALT M  &mt_b RGUI W  &sk LSHFT  &kp PSCRN
-                               &kp RIGHT     &none            &none             &spc_nav NAV SPACE  &kp BSPC    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 5
+                               &kp RIGHT     &none            &none             &spc_nav NAV SPACE  &mo_tog_hp MOUSE_M MOUSE_M    &kp RET  &spc_nav NAV SPACE  &none          &none         &mo 5
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp C_PREV C_NEXT>;
