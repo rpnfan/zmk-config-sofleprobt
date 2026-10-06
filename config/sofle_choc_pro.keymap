@@ -300,7 +300,7 @@
         ht_newtab: ht_newtab {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
-            flavor = "tap-preferred";
+            flavor = "hold-preferred";
             tapping-term-ms = <HT_TERM>;
             bindings = <&m_tabsrch>, <&kp>;
         };
@@ -308,7 +308,7 @@
         ht_paste: ht_paste {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
-            flavor = "tap-preferred";
+            flavor = "hold-preferred";
             tapping-term-ms = <HT_TERM>;
             bindings = <&m_clipangel>, <&kp>;
         };
