@@ -68,6 +68,7 @@
 
 // ── Timing ─────────────────────────────────────────────────────────────────
 
+#define DUAL_ROLE_HOLD-TAP   280
 #define HT_TERM   220
 #define SPC_TERM  200
 
@@ -300,16 +301,16 @@
         ht_newtab: ht_newtab {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
-            flavor = "hold-preferred";
-            tapping-term-ms = <HT_TERM>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <DUAL_ROLE_HOLD-TAP>;
             bindings = <&m_tabsrch>, <&kp>;
         };
 
         ht_paste: ht_paste {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
-            flavor = "hold-preferred";
-            tapping-term-ms = <HT_TERM>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <DUAL_ROLE_HOLD-TAP>;
             bindings = <&m_clipangel>, <&kp>;
         };
 
