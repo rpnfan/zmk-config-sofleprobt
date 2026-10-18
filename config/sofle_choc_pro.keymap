@@ -68,7 +68,7 @@
 
 // ── Timing ─────────────────────────────────────────────────────────────────
 
-#define DUAL_ROLE_HOLD-TAP   280
+#define DUAL_ROLE_HOLD_TAP   280
 #define HT_TERM   220
 #define SPC_TERM  200
 
@@ -302,7 +302,7 @@
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
             flavor = "tap-preferred";
-            tapping-term-ms = <DUAL_ROLE_HOLD-TAP>;
+            tapping-term-ms = <DUAL_ROLE_HOLD_TAP>;
             bindings = <&m_tabsrch>, <&kp>;
         };
 
@@ -310,7 +310,7 @@
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
             flavor = "tap-preferred";
-            tapping-term-ms = <DUAL_ROLE_HOLD-TAP>;
+            tapping-term-ms = <DUAL_ROLE_HOLD_TAP>;
             bindings = <&m_clipangel>, <&kp>;
         };
 
